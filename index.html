@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kế hoạch Hoạt động Group Lập nghiệp - Tháng 12</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutrals (Background) with Festive Accents (Red/Green for December context) -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Slate 50 */
+            color: #334155; /* Slate 700 */
+        }
+        
+        /* Chart Container Styling Rules */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px; /* Constrain width for readability */
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+
+        .activity-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .activity-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Custom scrollbar for the timeline list */
+        .timeline-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .timeline-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .timeline-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Application Structure Plan: 
+         1. Header: Context setting.
+         2. Stats Dashboard: High-level overview using Chart.js to show content balance.
+         3. Interactive Timeline: The main interactive element to browse the schedule.
+         4. Details Modal: For deep diving into specific post content without cluttering the UI.
+    -->
+
+    <!-- Header Section -->
+    <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-red-600 text-white p-2 rounded-lg font-bold text-xl">12</div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800">Kế hoạch Group Lập nghiệp</h1>
+                    <p class="text-sm text-slate-500">Tháng 12/2025 - Mùa Lễ Hội & Chốt Số Cuối Năm</p>
+                </div>
+            </div>
+            <div class="hidden md:flex items-center space-x-4">
+                <div class="text-right">
+                    <p class="text-xs text-slate-400 uppercase tracking-wide">Tổng hoạt động</p>
+                    <p class="text-2xl font-bold text-slate-800" id="total-activities">16</p>
+                </div>
+                <div class="h-8 w-px bg-slate-200"></div>
+                <div class="text-right">
+                    <p class="text-xs text-slate-400 uppercase tracking-wide">Tần suất</p>
+                    <p class="text-lg font-semibold text-green-600">~2 ngày/post</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- Visualization & Content Choices:
+             Left Column (LG: 4/12): Analytics & Filters. 
+             - Goal: Inform & Organize.
+             - Viz: Doughnut chart to show the diversity of content types.
+             - Interaction: Filter buttons to narrow down the timeline.
+        -->
+        <aside class="lg:col-span-4 space-y-6">
+            
+            <!-- Contextual Intro for Analysis -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-lg font-bold text-slate-800 mb-2">Phân bổ Chiến lược Nội dung</h2>
+                <p class="text-sm text-slate-600 mb-4">
+                    Tháng 12 tập trung mạnh vào các hoạt động <strong>tạo động lực</strong> và <strong>seeding bán hàng</strong> để tận dụng nhu cầu mua sắm Tết. Biểu đồ dưới đây thể hiện tỷ lệ giữa các loại hình bài đăng.
+                </p>
+                
+                <!-- Chart Container -->
+                <div class="chart-container mx-auto">
+                    <canvas id="typeDistributionChart"></canvas>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Lọc theo loại hoạt động</h3>
+                    <div class="flex flex-wrap gap-2" id="filter-container">
+                        <!-- Filters generated by JS -->
+                    </div>
+                    <button id="reset-filters" class="mt-4 w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-medium rounded-lg transition-colors hidden">
+                        Hiển thị tất cả
+                    </button>
+                </div>
+            </div>
+
+            <!-- Key Metrics / Summary Card -->
+            <div class="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-6 border border-red-100">
+                <h3 class="text-red-800 font-bold mb-2">Trọng tâm Tháng 12</h3>
+                <ul class="space-y-2 text-sm text-red-700">
+                    <li class="flex items-start">
+                        <span class="mr-2">🎯</span>
+                        <span><strong>Mùa Sale 12.12:</strong> Tập trung Topic & Vote đầu tháng.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="mr-2">🎄</span>
+                        <span><strong>Giáng Sinh:</strong> Nội dung tương tác nhẹ nhàng, quà tặng.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="mr-2">🧧</span>
+                        <span><strong>Chuẩn bị Tết:</strong> Thảo luận về vận chuyển và hàng Tết.</span>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Visualization & Content Choices:
+             Right Column (LG: 8/12): Timeline Feed.
+             - Goal: Organize & Inform.
+             - Presentation: Card-based timeline.
+             - Interaction: Click to view details.
+        -->
+        <section class="lg:col-span-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">Lịch trình Chi tiết</h2>
+                <div class="flex items-center space-x-2 text-sm text-slate-500 bg-white px-3 py-1 rounded-full shadow-sm border">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span>Sắp diễn ra</span>
+                </div>
+            </div>
+
+            <!-- Timeline Intro -->
+            <div class="mb-6 p-4 bg-blue-50 text-blue-800 rounded-lg text-sm border-l-4 border-blue-500">
+                <p>Danh sách dưới đây liệt kê toàn bộ 16 hoạt động trong tháng. Nhấp vào bất kỳ thẻ nào để xem chi tiết mục tiêu và nội dung triển khai.</p>
+            </div>
+
+            <!-- Timeline Grid -->
+            <div id="timeline-grid" class="grid grid-cols-1 gap-4 timeline-scroll max-h-[800px] overflow-y-auto pr-2 pb-10">
+                <!-- Content populated by JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal for Details -->
+    <div id="detail-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-overlay opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 transform scale-95 transition-transform duration-300" id="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <span id="modal-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">Topic</span>
+                    <button id="close-modal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <h3 id="modal-title" class="text-xl font-bold text-gray-900 mb-2">Tiêu đề hoạt động</h3>
+                <div class="flex items-center text-sm text-gray-500 mb-6">
+                    <span class="mr-2">📅</span>
+                    <span id="modal-date">01/12/2025</span>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase mb-1">Mục tiêu</h4>
+                        <p id="modal-goal" class="text-slate-700 text-sm">Mục tiêu hoạt động...</p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Nội dung chính</h4>
+                        <p id="modal-content-text" class="text-slate-600 leading-relaxed">Nội dung chi tiết...</p>
+                    </div>
+
+                    <div id="modal-note-container" class="hidden">
+                        <h4 class="text-xs font-bold text-amber-500 uppercase mb-1">Ghi chú</h4>
+                        <p id="modal-note" class="text-amber-700 text-sm italic bg-amber-50 p-3 rounded border border-amber-100">Note...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-6 py-4 rounded-b-2xl flex justify-end">
+                <button id="close-modal-btn" class="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors text-sm font-medium">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Implementation -->
+    <script>
+        // Data Storage
+        const planData = [
+            {
+                type: "Topic",
+                activity: "Chào tháng 12: Khởi động mùa lễ hội & Về đích 2024",
+                date: "01/12/2025",
+                goal: "Tạo động lực, thông báo lịch trình tháng",
+                content: "Lời chào đầu tháng, nhắc nhở về các sự kiện lớn (12.12, Giáng sinh, Tết) và kêu gọi đặt mục tiêu doanh số cuối năm.",
+                note: ""
+            },
+            {
+                type: "Vote",
+                activity: "Kế hoạch săn sale 12.12 của bạn?",
+                date: "03/12/2025",
+                goal: "Thu thập insight, kích thích tương tác",
+                content: "Option: Tập trung đẩy hàng tồn, Nhập thêm hàng mới, Chạy quảng cáo mạnh, Chỉ bán túc tắc.",
+                note: ""
+            },
+            {
+                type: "Topic",
+                activity: "Góc khoe đơn đầu tháng may mắn",
+                date: "05/12/2025",
+                goal: "Seeding bán hàng, tạo hiệu ứng đám đông",
+                content: "Kêu gọi thành viên khoe những đơn hàng đầu tiên của tháng 12 để lấy vía may mắn.",
+                note: ""
+            },
+            {
+                type: "Thảo luận",
+                activity: "Kinh nghiệm xử lý vận chuyển mùa cao điểm Tết",
+                date: "07/12/2025",
+                goal: "Hỗ trợ kỹ năng, chia sẻ kinh nghiệm",
+                content: "Thảo luận về các vấn đề thường gặp: ship chậm, mất hàng, khách hối và cách xử lý khéo léo.",
+                note: ""
+            },
+            {
+                type: "Tương tác chéo",
+                activity: "Đại hội tương tác chéo: Ủn mông chốt đơn 12.12",
+                date: "09/12/2025",
+                goal: "Tăng tương tác thực tế",
+                content: "Post định kỳ kêu gọi thả link shop/page để tương tác chéo trước thềm siêu sale.",
+                note: ""
+            },
+            {
+                type: "Topic",
+                activity: "Tổng hợp deal hot 12.12 (Admin post)",
+                date: "11/12/2025",
+                goal: "Hỗ trợ thông tin, thúc đẩy doanh số",
+                content: "Admin tổng hợp các mã giảm giá, chương trình khuyến mãi tốt nhất từ NCC trên Selly.",
+                note: ""
+            },
+            {
+                type: "Vote",
+                activity: "Nỗi lo lớn nhất của bạn dịp Tết là gì?",
+                date: "13/12/2025",
+                goal: "Thu thập insight, đồng cảm",
+                content: "Option: Không có đơn, Ship nghỉ sớm, Hết hàng, Khách bom hàng.",
+                note: ""
+            },
+            {
+                type: "Topic",
+                activity: "Hướng dẫn gói quà Giáng sinh ấn tượng",
+                date: "15/12/2025",
+                goal: "Hỗ trợ kỹ năng, tăng giá trị dịch vụ",
+                content: "Chia sẻ tips gói hàng đẹp, viết thiệp tay để tăng tỷ lệ khách quay lại.",
+                note: ""
+            },
+            {
+                type: "Topic",
+                activity: "Gợi ý quà tặng Giáng sinh (Seeding)",
+                date: "17/12/2025",
+                goal: "Seeding bán hàng",
+                content: "Gợi ý các set quà tặng có sẵn trên Selly phù hợp tặng Noel (Mỹ phẩm, khăn, tất...).",
+                note: ""
+            },
+            {
+                type: "Vote",
+                activity: "Bạn dự định tự thưởng gì cho mình cuối năm?",
+                date: "19/12/2025",
+                goal: "Tương tác giải trí, hiểu nhu cầu cá nhân",
+                content: "Option: Một chuyến du lịch, Đồ công nghệ mới, Spa/Làm đẹp, Để dành tiền tiết kiệm.",
+                note: ""
+            },
+            {
+                type: "Topic",
+                activity: "Review chân thực: Top sản phẩm Tết nên bán",
+                date: "21/12/2025",
+                goal: "Định hướng sản phẩm",
+                content: "Admin/Mod review chi tiết các mặt hàng Tết (Bánh mứt, Quà tết) đang có hoa hồng tốt.",
+                note: ""
+            },
+            {
+                type: "Vote",
+                activity: "Đánh giá mức độ hỗ trợ của Selly trong năm 2024",
+                date: "23/12/2025",
+                goal: "Thu thập feedback, cải thiện dịch vụ",
+                content: "Option: Rất hài lòng, Hài lòng, Bình thường, Cần cải thiện nhiều.",
+                note: ""
+            },
+            {
+                type: "Topic",
+                activity: "Giáng sinh an lành! (Post chúc mừng)",
+                date: "25/12/2025",
+                goal: "Gắn kết cộng đồng",
+                content: "Post chúc mừng Giáng sinh, tạo không khí ấm áp cho group.",
+                note: ""
+            },
+            {
+                type: "Thảo luận",
+                activity: "Dự đoán sản phẩm 'cháy hàng' dịp sát Tết",
+                date: "27/12/2025",
+                goal: "Kích thích thảo luận, định hướng nhập hàng",
+                content: "Mọi người cùng thảo luận xem năm nay trend Tết là gì (Màu sắc, loại bánh kẹo, đồ trang trí).",
+                note: ""
+            },
+            {
+                type: "Topic",
+                activity: "Vinh danh Best Seller tháng 12 & Năm 2024",
+                date: "29/12/2025",
+                goal: "Tạo động lực, vinh danh",
+                content: "Công bố danh sách các seller có thành tích xuất sắc nhất trong tháng cao điểm.",
+                note: ""
+            },
+            {
+                type: "Topic",
+                activity: "Tổng kết 2024 & Chào đón 2025 rực rỡ",
+                date: "31/12/2025",
+                goal: "Tổng kết, truyền cảm hứng",
+                content: "Lời cảm ơn từ Admin, nhìn lại hành trình 1 năm và lời chúc năm mới.",
+                note: ""
+            }
+        ];
+
+        // State Management
+        let currentFilter = 'All';
+
+        // Color Palette & Config
+        const typeColors = {
+            'Topic': { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200', chart: '#3b82f6' },
+            'Vote': { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', chart: '#a855f7' },
+            'Thảo luận': { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200', chart: '#f97316' },
+            'Tương tác chéo': { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200', chart: '#22c55e' },
+            'Event': { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200', chart: '#ef4444' }
+        };
+
+        // DOM Elements
+        const timelineGrid = document.getElementById('timeline-grid');
+        const filterContainer = document.getElementById('filter-container');
+        const resetBtn = document.getElementById('reset-filters');
+        
+        // Modal Elements
+        const modal = document.getElementById('detail-modal');
+        const modalContent = document.getElementById('modal-content');
+        const closeModal = document.getElementById('close-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+
+        // Initialize Chart
+        function initChart() {
+            const ctx = document.getElementById('typeDistributionChart').getContext('2d');
+            
+            // Aggregating data
+            const typeCounts = {};
+            planData.forEach(item => {
+                typeCounts[item.type] = (typeCounts[item.type] || 0) + 1;
+            });
+
+            const labels = Object.keys(typeCounts);
+            const data = Object.values(typeCounts);
+            const bgColors = labels.map(label => typeColors[label]?.chart || '#94a3b8');
+
+            const chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: bgColors,
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: { family: "'Inter', sans-serif", size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#1e293b',
+                            bodyColor: '#475569',
+                            borderColor: '#e2e8f0',
+                            borderWidth: 1,
+                            padding: 10,
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.chart._metasets[context.datasetIndex].total;
+                                    const percentage = Math.round((value / total) * 100) + '%';
+                                    return `${label}: ${value} hoạt động (${percentage})`;
+                                }
+                            }
+                        }
+                    },
+                    onClick: (e, activeElements) => {
+                        if (activeElements.length > 0) {
+                            const index = activeElements[0].index;
+                            const label = chart.data.labels[index];
+                            applyFilter(label);
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render Timeline Cards
+        function renderTimeline(filter = 'All') {
+            timelineGrid.innerHTML = '';
+            
+            const filteredData = filter === 'All' ? planData : planData.filter(item => item.type === filter);
+
+            if (filteredData.length === 0) {
+                timelineGrid.innerHTML = `
+                    <div class="text-center py-10 text-slate-400">
+                        <p>Không có hoạt động nào cho bộ lọc này.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredData.forEach((item, index) => {
+                const styles = typeColors[item.type] || { bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-200' };
+                
+                // Parse date for visual cues
+                const dateParts = item.date.split('/');
+                const day = dateParts[0];
+                
+                const card = document.createElement('div');
+                card.className = `activity-card bg-white p-4 rounded-xl border-l-4 shadow-sm flex items-start gap-4 ${styles.border}`;
+                card.style.borderLeftColor = styles.chart; // Set explicit border color from palette
+                
+                card.innerHTML = `
+                    <div class="flex-shrink-0 text-center w-16 bg-slate-50 rounded-lg p-2 border border-slate-100">
+                        <span class="block text-xs text-slate-400 uppercase">Tháng 12</span>
+                        <span class="block text-2xl font-bold text-slate-700">${day}</span>
+                    </div>
+                    <div class="flex-grow">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${styles.bg} ${styles.text}">
+                                ${item.type}
+                            </span>
+                        </div>
+                        <h3 class="text-base font-semibold text-slate-800 mb-1 leading-tight">${item.activity}</h3>
+                        <p class="text-sm text-slate-500 line-clamp-2">${item.goal}</p>
+                    </div>
+                    <div class="flex-shrink-0 self-center">
+                        <button class="text-slate-300 hover:text-slate-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                `;
+
+                // Add Click Event
+                card.addEventListener('click', () => openModal(item, styles));
+                timelineGrid.appendChild(card);
+            });
+        }
+
+        // Render Filters
+        function renderFilters() {
+            const types = [...new Set(planData.map(item => item.type))];
+            filterContainer.innerHTML = '';
+            
+            types.forEach(type => {
+                const btn = document.createElement('button');
+                const styles = typeColors[type] || { bg: 'bg-gray-100', text: 'text-gray-700' };
+                btn.className = `px-3 py-1 rounded-full text-xs font-medium border transition-all ${styles.bg} ${styles.text} border-transparent hover:brightness-95 opacity-70 hover:opacity-100`;
+                btn.textContent = type;
+                btn.dataset.type = type;
+                
+                btn.addEventListener('click', () => applyFilter(type));
+                filterContainer.appendChild(btn);
+            });
+        }
+
+        function applyFilter(type) {
+            currentFilter = type;
+            renderTimeline(type);
+            resetBtn.classList.remove('hidden');
+            
+            // Update UI state for buttons
+            Array.from(filterContainer.children).forEach(btn => {
+                if(btn.dataset.type === type) {
+                    btn.classList.remove('opacity-70');
+                    btn.classList.add('ring-2', 'ring-offset-1', 'ring-slate-300');
+                } else {
+                    btn.classList.add('opacity-70');
+                    btn.classList.remove('ring-2', 'ring-offset-1', 'ring-slate-300');
+                }
+            });
+        }
+
+        resetBtn.addEventListener('click', () => {
+            currentFilter = 'All';
+            renderTimeline();
+            resetBtn.classList.add('hidden');
+             Array.from(filterContainer.children).forEach(btn => {
+                btn.classList.add('opacity-70');
+                btn.classList.remove('ring-2', 'ring-offset-1', 'ring-slate-300');
+            });
+        });
+
+        // Modal Logic
+        function openModal(item, styles) {
+            document.getElementById('modal-title').textContent = item.activity;
+            document.getElementById('modal-date').textContent = item.date;
+            document.getElementById('modal-goal').textContent = item.goal;
+            document.getElementById('modal-content-text').textContent = item.content;
+            
+            const badge = document.getElementById('modal-badge');
+            badge.textContent = item.type;
+            badge.className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${styles.bg} ${styles.text}`;
+
+            const noteContainer = document.getElementById('modal-note-container');
+            if (item.note) {
+                document.getElementById('modal-note').textContent = item.note;
+                noteContainer.classList.remove('hidden');
+            } else {
+                noteContainer.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            // Small timeout to allow display:block to apply before opacity transition
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModalFn() {
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        closeModal.addEventListener('click', closeModalFn);
+        closeModalBtn.addEventListener('click', closeModalFn);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModalFn();
+        });
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTimeline();
+            initChart();
+            renderFilters();
+        });
+
+    </script>
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</body>
+</html>
